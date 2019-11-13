@@ -22,7 +22,6 @@ def  set_background_1(filePath1, filePath2):
 	set picture of item 1 of t to POSIX file "%s" -- display 1
 	set picture of item 2 of t to POSIX file "%s" -- display 2
 	end tell"""
-	print (script%(filePath1,filePath2))
 	return subprocess.Popen(script%(filePath1,filePath2) , shell = True)
 
 
@@ -40,22 +39,44 @@ except IOError:
 current_date = datetime.now()
 if current_date.date() > last_date.date():
 	feed = feedparser.parse('https://www.nasa.gov/rss/dyn/lg_image_of_the_day.rss')
+	
+	# delete old pics
+	item = feed.entries[2]
+	imgUrl = item.links[1].href
+
+	filename = imgUrl.rpartition("/")[-1]
+	filepath  = "/Pictures/" + filename
+	# delete pic 1
+	subprocess.run(["./delete_old.sh" ,filepath], cwd = path.abspath(path.dirname(__file__)))
+
+	item = feed.entries[3]
+	imgUrl = item.links[1].href
+
+	filename = imgUrl.rpartition("/")[-1]
+	filepath  = "/Pictures/" + filename
+	# delete pic 2
+	subprocess.run(["./delete_old.sh" ,filepath], cwd = path.abspath(path.dirname(__file__)))
+
+	# download new files
 	item = feed.entries[0]
 	imgUrl = item.links[1].href
 
 	filename1 = imgUrl.rpartition("/")[-1]
 	filepath1  = "/Pictures/" + filename1 
-
-	subprocess.run(["./wallpaper.sh", imgUrl ,filepath1], cwd = path.abspath(path.dirname(__file__)))
+	# download pic 1
+	subprocess.run(["./download_file.sh", imgUrl ,filepath1], cwd = path.abspath(path.dirname(__file__)))
 	
 	item = feed.entries[1]
 	imgUrl = item.links[1].href
 	filename2 = imgUrl.rpartition("/")[-1]
-	filepath2  = "/Pictures/" + filename2 
-	subprocess.run(["./wallpaper.sh", imgUrl ,filepath2], cwd = path.abspath(path.dirname(__file__)))
+	filepath2  = "/Pictures/" + filename2
+	# download pic 2 
+	subprocess.run(["./download_file.sh", imgUrl ,filepath2], cwd = path.abspath(path.dirname(__file__)))
+
+	# set wallpaper here
 	result = set_background_1(filepath1, filepath2)
 
 
-	# if not result.returncode:
-	# 	with open(date_file_path, "w") as f:
-	# 		f.write(current_date.strftime(DATE_FORMAT))
+	if not result.returncode:
+		with open(date_file_path, "w") as f:
+			f.write(current_date.strftime(DATE_FORMAT))
