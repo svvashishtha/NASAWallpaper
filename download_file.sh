@@ -15,6 +15,5 @@ name=$2
 
 filename="$HOME${name}"
 echo $filename
-# filename="$HOME/Pictures/random.jpg"
 curl -L -o $filename $url
 

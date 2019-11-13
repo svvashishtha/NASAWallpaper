@@ -5,12 +5,19 @@ import subprocess
 from os import path
 import feedparser
 
+DATE_FILE = "last-updated.conf"
+DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
+
+CACHE_FILE = "last-run.conf"
+
+
 def set_background(filePath):
 	script = """/usr/bin/osascript<<END
 	tell application "Finder"
 	set desktop picture to POSIX file "%s"
 	end tell
 	"""
+	print (script)
 	return subprocess.Popen(script%filePath , shell = True)
 
 def  set_background_1(filePath1, filePath2):
@@ -24,9 +31,22 @@ def  set_background_1(filePath1, filePath2):
 	end tell"""
 	return subprocess.Popen(script%(filePath1,filePath2) , shell = True)
 
+def delete_old_images():
+	cache_file_path = path.join(path.abspath(path.dirname(__file__)), CACHE_FILE)
+	
 
-DATE_FILE = "last-updated.conf"
-DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
+	try:
+		filenames = tuple(open(cache_file_path, 'r'))
+		for item in filenames:
+			subprocess.run(["./delete_old.sh" ,item], cwd = path.abspath(path.dirname(__file__)))
+	except IOError:
+		print ("error opening cache conf file")
+
+def write_cache(filename1, filename2):
+	cache_file_path = path.join(path.abspath(path.dirname(__file__)), CACHE_FILE)
+	with open(cache_file_path, "w") as f:
+		f.write(filename1 + "\n" + filename2)
+
 
 date_file_path = path.join(path.abspath(path.dirname(__file__)), DATE_FILE)
 
@@ -40,23 +60,7 @@ current_date = datetime.now()
 if current_date.date() > last_date.date():
 	feed = feedparser.parse('https://www.nasa.gov/rss/dyn/lg_image_of_the_day.rss')
 	
-	# delete old pics
-	item = feed.entries[2]
-	imgUrl = item.links[1].href
-
-	filename = imgUrl.rpartition("/")[-1]
-	filepath  = "/Pictures/" + filename
-	# delete pic 1
-	subprocess.run(["./delete_old.sh" ,filepath], cwd = path.abspath(path.dirname(__file__)))
-
-	item = feed.entries[3]
-	imgUrl = item.links[1].href
-
-	filename = imgUrl.rpartition("/")[-1]
-	filepath  = "/Pictures/" + filename
-	# delete pic 2
-	subprocess.run(["./delete_old.sh" ,filepath], cwd = path.abspath(path.dirname(__file__)))
-
+	
 	# download new files
 	item = feed.entries[0]
 	imgUrl = item.links[1].href
@@ -78,5 +82,8 @@ if current_date.date() > last_date.date():
 
 
 	if not result.returncode:
+		print ("I am hewre")
+		delete_old_images()
+		write_cache(filepath1, filepath2)
 		with open(date_file_path, "w") as f:
 			f.write(current_date.strftime(DATE_FORMAT))

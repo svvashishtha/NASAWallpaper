@@ -4,8 +4,6 @@
 set -e
 cd `dirname $0`
 
-
-
 if [ $# -ne 1 ]; then
     echo "usage: delte_old.sh <filename>"
     exit 1
